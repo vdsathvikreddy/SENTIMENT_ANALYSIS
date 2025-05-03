@@ -111,14 +111,33 @@ def print_accuracy():
     
 #     return out
 
+negation_words = {
+    "not", "no", "never", "none", "nobody", "nothing", "neither",
+    "nowhere", "hardly", "barely", "scarcely", "isn't", "wasn't",
+    "weren't", "doesn't", "don't", "didn't", "won't", "wouldn't",
+    "can't", "couldn't", "shouldn't", "cannot"
+}
+
+def contains_negation(sentence):
+    words = sentence.lower().split()
+    return any(word in negation_words for word in words)
+    
 def predict_sentiment(sentence):
     sentence = sentence.lower().strip()
     test = vectorizer.transform([sentence])
     pred = classifier.predict(test)
-    if pred[0] == 0 or pred[0] == 1:
-        out = "Negative"
-    elif pred[0] == 2:
-        out = "Neutral"
+    if contains_negation(sentence) != True:
+        if pred[0] == 0 or pred[0] == 1:
+            out = "Negative"
+        elif pred[0] == 2:
+            out = "Neutral"
+        else:
+            out = "Positive"
     else:
-        out = "Positive"
+        if pred[0] == 0:
+            out = "Neutral"
+        elif pred[0] == 2:
+            out = "Negative"
+        else:
+            out = "Neutral"
     return out
