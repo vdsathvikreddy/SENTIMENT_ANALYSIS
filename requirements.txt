@@ -1,8 +1,14 @@
 streamlit==1.39.0
+spacy==3.7.2
+thinc==8.2.5
+benepar==0.2.0
 transformers==4.44.2
 torch==2.2.0
 datasets==3.0.0
 nltk==3.8.1
 scikit-learn==1.5.2
 numpy==1.26.4
+https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.7.0/en_core_web_md-3.7.0.tar.gz
 rich==13.7.1
+Pillow
+requests
