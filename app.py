@@ -2,7 +2,7 @@ import streamlit as st
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import sst_2_logistic_regression
-import model
+import sst5
 
 # Load model and tokenizer
 @st.cache_resource
@@ -25,7 +25,7 @@ if st.button("Predict Using sst2 trained logistic regression"):
     st.success(f"**{out}**")
 
 if st.button("Predict Using sst5 trained logistic regression"):
-    out = model.predict_sentiment(user_input)
+    out = sst5.predict_sentiment(user_input)
     st.success(f"**{out}**")
 
 # Predict sentiment
