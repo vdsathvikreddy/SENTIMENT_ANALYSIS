@@ -35,7 +35,7 @@ def predict_sentiment(sentence):
     test = vectorizer.transform(s)
     pred = model.predict(test)
     if pred == [1]:
-        out = "This is a positive review."
+        out = "Positive"
     elif pred == [0]:
-        out = "This is a negative review."
+        out = "Negative"
     return out
