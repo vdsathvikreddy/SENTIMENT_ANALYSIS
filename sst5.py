@@ -11,13 +11,13 @@ import numpy as np
 import pandas as pd
 
 # Loading datasets
-train_dataset = pd.read_csv('train_modified.txt', sep='\t', header=None, names=["label", "text"])
+train_dataset = pd.read_csv('train_final.txt', sep='\t', header=None, names=["label", "text"])
 train_dataset['label'] = train_dataset['label'] - 1
 
-test_dataset = pd.read_csv('test_modified.txt', sep='\t', header=None, names=["label", "text"])
+test_dataset = pd.read_csv('test_final.txt', sep='\t', header=None, names=["label", "text"])
 test_dataset['label'] = test_dataset['label'] - 1 
 
-dev_dataset = pd.read_csv('dev_modified.txt', sep='\t', header=None, names=["label", "text"])
+dev_dataset = pd.read_csv('dev_final.txt', sep='\t', header=None, names=["label", "text"])
 dev_dataset['label'] = dev_dataset['label'] - 1
 
 # Apply custom mapping
