@@ -2,6 +2,7 @@ import streamlit as st
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
 import sst_2_logistic_regression
+import model
 
 # Load model and tokenizer
 @st.cache_resource
@@ -19,6 +20,14 @@ st.write("Enter a sentence to predict its sentiment ( Negative, Neutral, Positiv
 # Input text
 user_input = st.text_input("Enter a sentence to classify:", "")
 
+if st.button("Predict Using sst2 trained logistic regression"):
+    out = sst_2_logistic_regression.predict_sentiment(user_input)
+    st.success(f"**{out}**")
+
+if st.button("Predict Using sst5 trained logistic regression"):
+    out = model.predict_sentiment(user_input)
+    st.success(f"**{out}**")
+
 # Predict sentiment
 if st.button("Predict using distilbert"):
     if user_input.strip():
@@ -30,10 +39,8 @@ if st.button("Predict using distilbert"):
         label_map = {0: "Very Negative", 1: "Negative", 2: "Neutral", 3: "Positive", 4: "Very Positive"}
         sentiment = label_map[prediction]
         
-        st.success(f"Predicted sentiment: **{sentiment}**")
+        st.success(f"**{sentiment}**")
     else:
         st.error("Please enter a valid sentence.")
 
-if st.button("Predict Using sst2 trained logistic regression"):
-    out = sst_2_logistic_regression.predict_sentiment(user_input)
-    st.text(out)
+
