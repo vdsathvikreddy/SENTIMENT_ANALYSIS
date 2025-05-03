@@ -1,33 +1,34 @@
-# import spacy
-# import benepar
-# from nltk import Tree
+import os
 from sklearn.feature_extraction.text import TfidfVectorizer
-from datasets import load_dataset
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import classification_report
-from sklearn.metrics import accuracy_score
-from sklearn.svm import SVC
-import numpy as np
+from sklearn.metrics import classification_report, accuracy_score
 import pandas as pd
+import joblib
+
+# Define project path
+base_path = "/home/vdsat/Desktop/Projects/SENTIMENT_ANALYSIS-main"
 
 # Loading datasets
-train_dataset = pd.read_csv('train_final.txt', sep='\t', header=None, names=["label", "text"])
-train_dataset['label'] = train_dataset['label'] - 1
+def load_data(file_path):
+    """Load dataset from tab-separated file (label\ttext)."""
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Dataset file not found: {file_path}")
+    dataset = pd.read_csv(file_path, sep='\t', header=None, names=["label", "text"])
+    dataset['label'] = dataset['label'] - 1  # Adjust labels from 1-5 to 0-4
+    return dataset
 
-test_dataset = pd.read_csv('test_final.txt', sep='\t', header=None, names=["label", "text"])
-test_dataset['label'] = test_dataset['label'] - 1 
-
-dev_dataset = pd.read_csv('dev_final.txt', sep='\t', header=None, names=["label", "text"])
-dev_dataset['label'] = dev_dataset['label'] - 1
+train_dataset = load_data(os.path.join(base_path, "train_modified.txt"))
+test_dataset = load_data(os.path.join(base_path, "test_modified.txt"))
+dev_dataset = load_data(os.path.join(base_path, "dev_modified.txt"))
 
 # Apply custom mapping
 def remap_label(label):
     if label in [0, 1]:
-        return 0
+        return 0  # Negative
     elif label == 2:
-        return 2
+        return 2  # Neutral
     else:  # label in [3, 4]
-        return 4
+        return 4  # Positive
 
 train_dataset['label'] = train_dataset['label'].apply(remap_label)
 test_dataset['label'] = test_dataset['label'].apply(remap_label)
@@ -40,77 +41,46 @@ test_labels = test_dataset['label']
 dev_sentences = dev_dataset['text']
 dev_labels = dev_dataset['label']
 
-sentences = pd.concat([train_sentences, test_sentences], ignore_index=True)
-labels = pd.concat([train_labels, test_labels], ignore_index=True)
+# Concatenate train and test for vectorization
+sentences = pd.concat([train_sentences, dev_sentences], ignore_index=True)
+labels = pd.concat([train_labels, dev_labels], ignore_index=True)
 
-# sentences = pd.concat([sentences, dev_sentences], ignore_index=True)
-# labels = pd.concat([labels, dev_labels], ignore_index=True)
-
-# Convert text sentences to number form using tfidf vectorizer
+# Convert text to TF-IDF features
 vectorizer = TfidfVectorizer(
-    stop_words='english',  # Use scikit-learn's English stop words
+    stop_words='english',
     lowercase=True,
-    ngram_range=(1, 2),  # add bigrams
+    ngram_range=(1, 2),
     max_features=10000
 )
-
 tfidf_matrix = vectorizer.fit_transform(sentences)
-dev_tfidf_matrix = vectorizer.transform(dev_sentences)
-# Define classifier and fit training data
-classifier = LogisticRegression(C=10, penalty='l2', solver='lbfgs', max_iter=10000, class_weight='balanced')
+test_tfidf_matrix = vectorizer.transform(test_sentences)
+
+# Train logistic regression classifier
+classifier = LogisticRegression(
+    C=10,
+    penalty='l2',
+    solver='lbfgs',
+    max_iter=10000,
+    class_weight='balanced'
+)
 classifier.fit(tfidf_matrix, labels)
 
-y_pred = classifier.predict(dev_tfidf_matrix)
-accuracy = accuracy_score(dev_labels, y_pred)
-print(f"Training accuracy: {accuracy}")
+# Evaluate on dev set
+y_pred = classifier.predict(test_tfidf_matrix)
+accuracy = accuracy_score(test_labels, y_pred)
+print(f"Dev Accuracy: {accuracy:.4f}")
+print("Classification Report (Dev Set):")
+print(classification_report(test_labels, y_pred, target_names=["Negative", "Neutral", "Positive"]))
 
-def print_accuracy():
-    return accuracy
+# Save model and vectorizer
+model_path = os.path.join(base_path, "sst5_logistic_model.joblib")
+vectorizer_path = os.path.join(base_path, "tfidf_vectorizer.joblib")
+joblib.dump(classifier, model_path)
+joblib.dump(vectorizer, vectorizer_path)
+print(f"Model saved to '{model_path}'")
+print(f"Vectorizer saved to '{vectorizer_path}'")
 
-# Load Spacy model and Benepar once at the start
-# nlp = spacy.load("en_core_web_md")
-# benepar.download('benepar_en3')
-# nlp.add_pipe("benepar", config={"model": "benepar_en3"})
-
-# Function to extract meaningful phrases from a sentence
-# def phrases_from_sentence(sentence):
-#     doc = nlp(sentence)  # Process the sentence with spacy and benepar
-#     phrases = []
-#     for sent in doc.sents:
-#         tree = sent._.parse_string  # Get the parse tree for the sentence
-#         parsed = Tree.fromstring(tree)  # Parse the tree using NLTK
-#         # Extract all phrases where the subtree height is greater than 2
-#         phrases += [' '.join(leaf) for subtree in parsed.subtrees() if subtree.height() > 2 for leaf in [subtree.leaves()]]
-#     return phrases
-
-# Function to predict sentiment for a phrase
-# def predict_sentiment_phrase(phrase):
-#     test = vectorizer.transform([phrase])
-#     pred = classifier.predict(test)
-#     return pred[0]
-
-# Function to predict sentiment for the sentence by analyzing its phrases
-# def predict_sentiment_sentence(sentence):
-#     phrases = phrases_from_sentence(sentence)
-#     len_phrases = len(phrases)
-#     value = 0
-#     out = {}
-#     for i in reversed(range(len_phrases)):
-#         p = predict_sentiment_phrase(phrases[i])
-#         out[phrases[i]] = p
-#         if p != 2:
-#             value += p
-#     value /= len_phrases  # Compute average sentiment score based on phrases
-
-#     if value < 1.5:
-#         out = "This review is negative"
-#     elif value < 2.5:
-#         out = "This review is neutral"
-#     else:
-#         out = "This review is positive"
-    
-#     return out
-
+# Negation handling for predictions
 negation_words = {
     "not", "no", "never", "none", "nobody", "nothing", "neither",
     "nowhere", "hardly", "barely", "scarcely", "isn't", "wasn't",
@@ -121,22 +91,22 @@ negation_words = {
 def contains_negation(sentence):
     words = sentence.lower().split()
     return any(word in negation_words for word in words)
-    
+
 def predict_sentiment(sentence):
     sentence = sentence.lower().strip()
     test = vectorizer.transform([sentence])
-    pred = classifier.predict(test)
-    if contains_negation(sentence) != True:
-        if pred[0] == 0 or pred[0] == 1:
+    pred = classifier.predict(test)[0]
+    if not contains_negation(sentence):
+        if pred == 0:
             out = "Negative"
-        elif pred[0] == 2:
+        elif pred == 2:
             out = "Neutral"
         else:
             out = "Positive"
     else:
-        if pred[0] == 0:
+        if pred == 0:
             out = "Neutral"
-        elif pred[0] == 2:
+        elif pred == 2:
             out = "Negative"
         else:
             out = "Neutral"
