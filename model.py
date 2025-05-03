@@ -116,9 +116,9 @@ def predict_sentiment(sentence):
     test = vectorizer.transform([sentence])
     pred = classifier.predict(test)
     if pred[0] == 0 or pred[0] == 1:
-        out = "This is negative review"
+        out = "Negative"
     elif pred[0] == 2:
-        out = "This review was neutral"
+        out = "Neutral"
     else:
-        out = "This review was positive"
+        out = "Positive"
     return out
